@@ -50,6 +50,7 @@ type output struct {
 	monitorFiltering     *monitorFiltering
 	receiverID           component.ID
 	nextDimensionClients []metadata.MetadataExporter
+	logErroredSpans      bool
 }
 
 var _ types.Output = (*output)(nil)
@@ -79,6 +80,7 @@ func newOutput(
 		extraDimensions:      map[string]string{},
 		monitorFiltering:     filtering,
 		reporter:             obsReceiver,
+		logErroredSpans:      config.LogErroredSpans,
 	}, nil
 }
 
@@ -236,6 +238,9 @@ func (out *output) SendSpans(spans ...*trace.Span) {
 	traces, err := out.translator.ToTraces(spans)
 	if err != nil {
 		out.logger.Error("error converting SFx spans to ptrace.Traces", zap.Error(err))
+		if out.logErroredSpans {
+			out.logger.Info("SWAT logging: errored SFx spans", zap.Any("spans", spans))
+		}
 	}
 
 	err = out.nextTracesConsumer.ConsumeTraces(context.Background(), traces)

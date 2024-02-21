@@ -53,6 +53,7 @@ type Config struct {
 	// Will expand to MonitorCustomConfig Host and Port values if unset.
 	Endpoint         string   `mapstructure:"endpoint"`
 	DimensionClients []string `mapstructure:"dimensionClients"`
+	LogErroredSpans  bool     `mapstructure:"logErroredSpans"`
 	acceptsEndpoints bool
 }
 
@@ -92,7 +93,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		delete(allSettings, "endpoint")
 	}
 
+	var logErroredSpans any
 	var err error
+	if logErroredSpans, ok = allSettings["logErroredSpans"]; ok {
+		cfg.LogErroredSpans, err = strconv.ParseBool(fmt.Sprintf("%s", logErroredSpans))
+		delete(allSettings, "logErroredSpans")
+	}
+
 	cfg.DimensionClients, err = getStringSliceFromAllSettings(allSettings, "dimensionClients", errDimensionClientValue)
 	if err != nil {
 		return err
